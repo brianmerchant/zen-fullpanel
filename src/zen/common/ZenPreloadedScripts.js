@@ -30,6 +30,7 @@
     "chrome://browser/content/zen-components/ZenEmojiPicker.mjs",
     "chrome://browser/content/zen-components/ZenDownloadAnimation.mjs",
     "resource:///modules/zen/share/ZenShareManager.mjs",
+    "chrome://browser/content/zen-components/ZenFullPanel.mjs",
   ];
 
   for (let script of scripts) {

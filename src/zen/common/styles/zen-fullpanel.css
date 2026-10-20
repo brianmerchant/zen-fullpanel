@@ -1,0 +1,50 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* FullPanel fullscreen (macOS): the chrome around the camera housing. The
+ * attributes and variables are set by ZenFullPanel.mjs only while a window
+ * is in FullPanel fullscreen, so none of this applies anywhere else. */
+
+@media (-moz-platform: macos) {
+  /* A toolbar at the top of the content column stays below the housing. */
+  :root[zen-fullpanel-active]:not([zen-single-toolbar="true"]) #zen-appcontent-navbar-container {
+    padding-top: var(--zen-fullpanel-housing-bottom);
+  }
+
+  /* Notch scrolling off: the content area starts below the housing. */
+  :root[zen-fullpanel-active][zen-single-toolbar="true"]:not([zen-fullpanel-notch-scroll]) #zen-appcontent-wrapper {
+    padding-top: var(--zen-fullpanel-housing-bottom);
+  }
+
+  /* Notch scrolling: the page's own scrollbar starts below the housing too. */
+  :root[zen-fullpanel-notch-scroll] browser[type="content"] {
+    -moz-scrollbar-inset-block: var(--zen-fullpanel-scrollbar-inset, 0px) 0px;
+  }
+
+  /* Outer border off: the page card runs edge to edge, square. */
+  :root[zen-fullpanel-active]:not([zen-fullpanel-outer-border]) {
+    & #zen-tabbox-wrapper {
+      margin: 0 !important;
+    }
+
+    & #tabbrowser-tabbox #tabbrowser-tabpanels .browserSidebarContainer {
+      border-radius: 0 !important;
+    }
+  }
+
+  /* Inner border: the card's edge where it steps around the housing. */
+  #zen-fullpanel-outline {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 10;
+
+    & path {
+      fill: none;
+      stroke: light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.18));
+      stroke-width: 1px;
+    }
+  }
+}

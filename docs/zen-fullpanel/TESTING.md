@@ -53,3 +53,33 @@ measurements in `~/Projects/Zen-FullPanelKit/test-runs/<time>/`:
 ## Results
 
 See the end of this file (filled in per run).
+
+### 2026-10-20, MacBook Pro 14" (M1 Pro), macOS 27.0.1
+
+Stock baseline (1.23.3b `6adb810`, release brand, `Zen.app`):
+
+| Suite | Result |
+|---|---|
+| `test_zen_baseline.py` | 14/14 OK (menubar: 88 items, 0 unlabelled; Zen's Spaces menu and panes present) |
+| Window capture | Zen's sidebar UI (URL field, Spaces, New Tab, update card) |
+| Native fullscreen | 1800 × 1130 (camera-safe) on the 1800 × 1169 display, back to the window |
+
+Zen FullPanel (`ce63685`, `fullpanel` brand), both the objdir bundle and the
+staged self-contained app (`~/Projects/Builds/Zen-FullPanel/staging/ce63685-fpk1911fa2`):
+
+| Suite | Result |
+|---|---|
+| `verify-vendor.py` | 25 files identical to FullPanelKit v0.1.0 |
+| `test_zen_baseline.py` (Zen FullPanel identity) | 14/14 OK |
+| `test_fullpanel_chrome.py` | 16/16 OK |
+| `notch-scroll/test_notch_scroll.py` | 20/20 OK |
+| User profile folder `~/Library/Application Support/zen` | unchanged (mtimes compared before and after) |
+
+Found and fixed while testing: inline style cannot set the chrome-only
+`-moz-scrollbar-inset-block` (now set from `zen-fullpanel.css`); a brand
+switch in an existing objdir left the old brand strings (BUILDING.md); Zen's
+post-update overlay covered the window in fresh profiles, which had made a
+hit-test assertion pass trivially (test profiles now skip it).
+
+Hardware run (`hardware_fullscreen.py`): **not yet run** — it takes over the
+display and needs the owner's go-ahead.

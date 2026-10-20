@@ -1,0 +1,14 @@
+<!doctype html><meta charset=utf-8><title>vote</title>
+<link rel=stylesheet href=common.css><script src=probe.js></script>
+<!-- Three in-flow columns at the top edge; the band takes two equal samples
+     (15%, 50%, 85% of the width) or else the middle one (Talos Solid Color).
+     Colors come from the query: ?l=r,g,b&m=r,g,b&r=r,g,b -->
+<style>#cols { display: grid; grid-template-columns: 1fr 1fr 1fr; height: 400px; }
+#rows { height: 3000px; }</style>
+<div id=cols><div id=l></div><div id=m></div><div id=r></div></div><div id=rows></div>
+<script>
+const q = new URLSearchParams(location.search);
+for (const id of ["l", "m", "r"]) {
+  document.getElementById(id).style.background = `rgb(${q.get(id) || "255,255,255"})`;
+}
+</script>

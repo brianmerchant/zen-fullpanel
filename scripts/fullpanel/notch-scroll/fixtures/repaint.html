@@ -1,0 +1,6 @@
+<!doctype html><meta charset=utf-8><title>repaint</title>
+<link rel=stylesheet href=common.css><script src=probe.js></script>
+<!-- The top element's color changes without a reflow (Talos re-reads the
+     top edge after style mutations, throttled to 250 ms). -->
+<style>#head { height: 200px; background: rgb(200, 30, 30); } #rows { height: 3000px; }</style>
+<div id=head></div><div id=rows></div>

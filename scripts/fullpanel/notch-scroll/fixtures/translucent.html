@@ -1,0 +1,7 @@
+<!doctype html><meta charset=utf-8><title>translucent</title>
+<link rel=stylesheet href=common.css><script src=probe.js></script>
+<!-- An in-flow, 60% opaque blue header over a white body. Talos composites
+     it over what lies behind: rgb(102,102,255). -->
+<style>body { background: #fff; } #head { height: 200px; background: rgba(0, 0, 255, 0.6); }
+#rows { height: 3000px; }</style>
+<div id=head></div><div id=rows></div>

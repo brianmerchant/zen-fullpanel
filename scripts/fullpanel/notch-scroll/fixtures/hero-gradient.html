@@ -1,0 +1,10 @@
+<!doctype html><meta charset=utf-8><title>hero-gradient</title>
+<link rel=stylesheet href=common.css><script src=probe.js></script>
+<!-- GitHub-like: dark canvas color, hero section with a navy-to-transparent
+     gradient over a black wrapper, transparent header on top. -->
+<style>body { background: rgb(13,17,23); color: #fff; }
+#wrap { background: #000; }
+#nav { position: fixed; top: 0; left: 0; right: 0; z-index: 2; }
+#hero { height: 900px; background-image: linear-gradient(rgb(0,2,64), transparent); padding-top: 140px; text-align: center; }</style>
+<header id=nav class=bar><a id=navLeft href=#>Product</a><span>transparent header</span><a id=navRight href=#>Sign in</a></header>
+<div id=wrap><section id=hero><h1>Hero</h1><input id=search placeholder="Email" style="width:360px;padding:10px"></section></div>

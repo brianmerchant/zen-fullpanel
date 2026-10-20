@@ -17,6 +17,10 @@
 #  include "mozilla/WindowsVersion.h"
 #endif
 
+#if defined(XP_MACOSX)
+#  include "mozilla/ZenFullPanel.h"
+#endif
+
 namespace zen {
 
 // Use the macro to inject all of the definitions for nsISupports.
@@ -116,6 +120,17 @@ auto ZenCommonUtils::IsSharingSupported() -> bool {
   return NS_ZEN_CAN_SHARE_NATIVE;
 #else
   return false;
+#endif
+}
+
+NS_IMETHODIMP
+ZenCommonUtils::FullPanelState(mozIDOMWindowProxy* aWindow,
+                               nsAString& aResult) {
+#if defined(XP_MACOSX)
+  return fullpanel::DescribeWindow(aWindow, aResult);
+#else
+  aResult.AssignLiteral("{}");
+  return NS_OK;
 #endif
 }
 

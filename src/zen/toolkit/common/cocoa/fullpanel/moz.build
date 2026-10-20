@@ -1,0 +1,24 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# FullPanelKit fullscreen for browser windows. See ZenFullPanel.h and
+# docs/zen-fullpanel/ in the Zen source tree.
+
+DIRS += ["FullPanelKitCore"]
+
+EXPORTS.mozilla += [
+    "ZenFullPanel.h",
+]
+
+SOURCES += [
+    "ZenFullPanel.mm",
+]
+
+LOCAL_INCLUDES += [
+    "/widget",
+    "/widget/cocoa",
+    "FullPanelKitCore/include",
+]
+
+FINAL_LIBRARY = "xul"

@@ -1,17 +1,18 @@
 diff --git a/widget/cocoa/nsCocoaWindow.mm b/widget/cocoa/nsCocoaWindow.mm
-index fe4c27544a29b8bbf0b99331c9e1bce3038b8e81..84bd5953c6fc71bcd39ec8922ac84df134a59781 100644
+index fe4c27544a29b8bbf0b99331c9e1bce3038b8e81..f5ce466dd63e2f27581768c6dbb146958c57d931 100644
 --- a/widget/cocoa/nsCocoaWindow.mm
 +++ b/widget/cocoa/nsCocoaWindow.mm
-@@ -87,6 +87,8 @@
+@@ -87,6 +87,9 @@
  #include "mozilla/StaticPrefs_mozilla.h"
  #include "mozilla/StaticPrefs_ui.h"
  #include "mozilla/StaticPrefs_widget.h"
 +#include "mozilla/StaticPrefs_zen.h"
 +#include "mozilla/nsZenDragAndDrop.h"
++#include "mozilla/ZenFullPanel.h"
  #include "mozilla/WritingModes.h"
  #include "mozilla/dom/Document.h"
  #include "mozilla/layers/CompositorBridgeChild.h"
-@@ -1333,6 +1335,110 @@ - (NSRect)_opaqueRectForWindowMoveWhenInTitlebar {
+@@ -1333,6 +1336,114 @@ - (NSRect)_opaqueRectForWindowMoveWhenInTitlebar {
  }
  @end
  
@@ -91,6 +92,10 @@ index fe4c27544a29b8bbf0b99331c9e1bce3038b8e81..84bd5953c6fc71bcd39ec8922ac84df1
 +  Preferences::RegisterCallback(ZenWindowVibrancyPrefChanged,
 +                                "zen.widget.macos.window-vibrancy", this);
 +  UpdateWindowMaterial();
++  // FullPanel fullscreen (opt-in) for Gecko's own window class only.
++  if ([mWindow isKindOfClass:[ToolbarWindow class]]) {
++    zen::fullpanel::AttachBrowserWindow(mWindow);
++  }
 +}
 +
 +void nsCocoaWindow::UpdateWindowMaterial() {
@@ -122,7 +127,7 @@ index fe4c27544a29b8bbf0b99331c9e1bce3038b8e81..84bd5953c6fc71bcd39ec8922ac84df1
  void nsCocoaWindow::UpdateWindowDraggingRegion(
      const LayoutDeviceIntRegion& aRegion) {
    // mChildView returns YES from mouseDownCanMoveWindow, so we need to put
-@@ -3908,7 +4014,9 @@ - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
+@@ -3908,7 +4019,9 @@ - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
  // NSDraggingDestination
  - (NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)sender {
    MOZ_LOG(sCocoaLog, LogLevel::Info, ("ChildView draggingUpdated: entered\n"));
@@ -133,7 +138,7 @@ index fe4c27544a29b8bbf0b99331c9e1bce3038b8e81..84bd5953c6fc71bcd39ec8922ac84df1
  }
  
  // NSDraggingDestination
-@@ -3924,6 +4032,9 @@ - (void)draggingExited:(id<NSDraggingInfo>)sender {
+@@ -3924,6 +4037,9 @@ - (void)draggingExited:(id<NSDraggingInfo>)sender {
  - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
    nsAutoRetainCocoaObject kungFuDeathGrip(self);
    BOOL handled = [self doDragAction:eDrop sender:sender] != NSDragOperationNone;
@@ -143,7 +148,19 @@ index fe4c27544a29b8bbf0b99331c9e1bce3038b8e81..84bd5953c6fc71bcd39ec8922ac84df1
    NS_IF_RELEASE(mDragService);
    return handled;
  }
-@@ -4978,6 +5089,10 @@ - (BOOL)wantsBestResolutionOpenGLSurface {
+@@ -4951,6 +5067,11 @@ - (BOOL)wantsBestResolutionOpenGLSurface {
+   // we clear our delegate.
+   EndOurNativeTransition();
+ 
++  // Restore the menu bar and presentation state FullPanel may own.
++  if (mIsBrowserWindow) {
++    zen::fullpanel::DetachBrowserWindow(mWindow);
++  }
++
+   // We are about to destroy mWindow. Before we do that, make sure that we
+   // hide the window using the Show() method, because it has several side
+   // effects that our parent and listeners might be expecting. If we don't
+@@ -4978,6 +5099,10 @@ - (BOOL)wantsBestResolutionOpenGLSurface {
  nsCocoaWindow::~nsCocoaWindow() {
    NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
  
@@ -154,3 +171,16 @@ index fe4c27544a29b8bbf0b99331c9e1bce3038b8e81..84bd5953c6fc71bcd39ec8922ac84df1
    RemoveAllChildren();
    if (mWindow && mWindowMadeHere) {
      CancelAllTransitions();
+@@ -6203,6 +6328,12 @@ static CGSRemoveWindowsFromSpacesFunc GetCGSRemoveWindowsFromSpacesFunc() {
+   // Re-import state.
+   [mWindow importState:state];
+ 
++  // A browser window recreated as a ToolbarWindow gets its FullPanel session
++  // again (the old one went with the old window).
++  if (mIsBrowserWindow && [mWindow isKindOfClass:[ToolbarWindow class]]) {
++    zen::fullpanel::AttachBrowserWindow(mWindow);
++  }
++
+   // Add the old content view subviews to the new window's content view.
+   for (NSView* view in contentViewContents) {
+     [[mWindow contentView] addSubview:view];

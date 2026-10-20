@@ -1,0 +1,33 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# FullPanel fullscreen (macOS, FullPanelKit). Tools > Browser Tools >
+# Fullscreen sets these; see docs/zen-fullpanel/.
+
+# Opt-in. false: standard native fullscreen. true: FullPanel fullscreen
+# (native fullscreen Space that also covers the areas beside the camera
+# housing). Applies from the next fullscreen entry.
+- name: zen.fullpanel.enabled
+  value: false
+  condition: "defined(XP_MACOSX)"
+
+# Notch scrolling in FullPanel fullscreen:
+#   "solid": pages start below the camera housing and scroll up into the
+#            band beside it; at rest the band shows the page's top-edge
+#            color (Talos's Solid Color).
+#   "off":   the content area starts below the camera housing.
+- name: zen.fullpanel.notch-scroll-mode
+  value: "solid"
+  condition: "defined(XP_MACOSX)"
+
+# Window border in FullPanel fullscreen. Inner: the page card's outline,
+# which steps around the camera housing. Outer: the gap and rounded corners
+# around the page card; off, the page runs edge to edge.
+- name: zen.fullpanel.inner-border
+  value: true
+  condition: "defined(XP_MACOSX)"
+
+- name: zen.fullpanel.outer-border
+  value: true
+  condition: "defined(XP_MACOSX)"

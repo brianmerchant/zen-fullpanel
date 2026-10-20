@@ -1,0 +1,48 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# FullPanelKit's Objective-C core, vendored unmodified (MIT; see LICENSE and
+# UPSTREAM.json). Built as in FullPanelKit's own Package.swift and Electron
+# bridge: ARC, AppKit and CoreGraphics (both already linked into libxul).
+# SkyLight is resolved at runtime. FullPanelWindow.m is included because the
+# engine refers to its class; Zen never creates one.
+
+SOURCES += [
+    "FPKAppKitHooks.m",
+    "FPKDecisions.c",
+    "FPKEngine.m",
+    "FPKFullScreenTitlebar.m",
+    "FPKMenuBarOverlay.m",
+    "FPKSupport.m",
+    "FullPanelDisplayGeometry.m",
+    "FullPanelSession.m",
+    "FullPanelWindow.m",
+]
+
+LOCAL_INCLUDES += [
+    "include",
+]
+
+CMFLAGS += ["-fobjc-arc"]
+
+# FullPanelKit requires macOS 13 and uses macOS 12 API (NSScreen
+# safeAreaInsets) unguarded; Gecko targets macOS 11 and makes that an error.
+# ZenFullPanel.mm never attaches a session below macOS 13, so none of this
+# code runs there.
+CMFLAGS += ["-Wno-unguarded-availability-new"]
+
+# Third-party code: keep it byte-identical to the release instead of
+# adjusting it to Gecko's warning set.
+AllowCompilerWarnings()
+
+FINAL_LIBRARY = "xul"
+
+# Reproduced in about:license.
+LICENSES += ["fullpanelkit"]
+LICENSES["fullpanelkit"].title = "FullPanelKit License"
+LICENSES["fullpanelkit"].text = "LICENSE"
+LICENSES["fullpanelkit"].spdx = "MIT"
+LICENSES["fullpanelkit"].url = "https://github.com/brianmerchant/FullPanelKit"
+
+LICENSED_UNDER += ["fullpanelkit"]

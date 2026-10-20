@@ -45,6 +45,18 @@
           "repo": "zen-browser/desktop"
         }
       }
+    },
+    "fullpanel": {
+      "backgroundColor": "#282A33",
+      "brandShorterName": "Zen FullPanel",
+      "brandShortName": "Zen FullPanel",
+      "brandFullName": "Zen FullPanel",
+      "release": {
+        "displayVersion": "1.23.3b",
+        "github": {
+          "repo": "brianmerchant/zen-fullpanel"
+        }
+      }
     }
   },
   "license": {

@@ -64,3 +64,15 @@ else
     export CXXFLAGS="$CXXFLAGS -mcpu=apple-m1"
   fi
 fi
+
+# zen-fullpanel: the development identity of the FullPanel fork (brand
+# "fullpanel", see surfer.json and docs/zen-fullpanel/IDENTITY.md). It must
+# coexist with stock Zen: its own bundle identifier
+# (io.github.brianmerchant.fullpanel.zen), its own profile folder
+# (~/Library/Application Support/zen-fullpanel, ZEN_APP_PROFILE), and no updater, so Zen's
+# update service can never replace this build. Other brands are unaffected.
+if test "${brandingDir}" = "browser/branding/fullpanel"; then
+  ac_add_options --with-distribution-id=io.github.brianmerchant.fullpanel
+  ac_add_options ZEN_APP_PROFILE=zen-fullpanel
+  ac_add_options --disable-updater
+fi

@@ -1,0 +1,27 @@
+diff --git a/layout/generic/ViewportFrame.cpp b/layout/generic/ViewportFrame.cpp
+index fb7cba077bc0dd6851663f8621c38aa0b9de63ab..5f0a1c09a39e99988458059678f1126c52085031 100644
+--- a/layout/generic/ViewportFrame.cpp
++++ b/layout/generic/ViewportFrame.cpp
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include "mozilla/ViewportFrame.h"
++#include "mozilla/ZenObscuredInset.h"
+ 
+ #include "MobileViewportManager.h"
+ #include "mozilla/AbsoluteContainingBlock.h"
+@@ -378,6 +379,14 @@ nsRect ViewportFrame::GetContainingBlockAdjustedForScrollbars(
+   nsRect rect(origin, computedSize.GetPhysicalSize(wm));
+   rect.SizeTo(AdjustViewportSizeForFixedPosition(rect));
+ 
++  const ScrollContainerFrame* rootScroll = do_QueryFrame(mFrames.FirstChild());
++  if (rootScroll && rect.height != NS_UNCONSTRAINEDSIZE) {
++    // Zen notch scroll; keep in sync with CalculateHypotheticalPosition().
++    const nscoord obscuredTop = zen::ObscuredTopInset(PresContext());
++    rect.y += obscuredTop;
++    rect.height = std::max(0, rect.height - obscuredTop);
++  }
++
+   return rect;
+ }
+ 

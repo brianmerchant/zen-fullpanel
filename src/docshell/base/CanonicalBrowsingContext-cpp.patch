@@ -1,0 +1,12 @@
+diff --git a/docshell/base/CanonicalBrowsingContext.cpp b/docshell/base/CanonicalBrowsingContext.cpp
+index 941d5c2533f8ed087af1153a7af7863c96df885b..33679703050b0a415f518d0da95654ab44cad9d0 100644
+--- a/docshell/base/CanonicalBrowsingContext.cpp
++++ b/docshell/base/CanonicalBrowsingContext.cpp
+@@ -316,6 +316,7 @@ void CanonicalBrowsingContext::ReplacedBy(
+   txn.SetInnerSizeSpoofedForRFP(GetInnerSizeSpoofedForRFP());
+   txn.SetIPAddressSpace(GetIPAddressSpace());
+   txn.SetParentalControlsEnabled(GetParentalControlsEnabled());
++  txn.SetZenObscuredTopInset(GetZenObscuredTopInset());
+ 
+   if (!GetLanguageOverride().IsEmpty()) {
+     // Reapply language override to update the corresponding realm.

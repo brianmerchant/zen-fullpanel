@@ -1,18 +1,21 @@
 diff --git a/docshell/base/BrowsingContext.h b/docshell/base/BrowsingContext.h
-index 6f7f58bba3be6f08b3b27e81f30864c61d683351..2516126365ee9e1c07e245a873efe5f48767aff7 100644
+index 9cecca7627686be6bcc297cdedd342332b2a07c3..9751f48a6510b7e2ccbb9e7f3e50b7045abfb053 100644
 --- a/docshell/base/BrowsingContext.h
 +++ b/docshell/base/BrowsingContext.h
-@@ -265,6 +265,9 @@ struct EmbedderColorSchemes {
+@@ -263,6 +263,12 @@ struct EmbedderColorSchemes {
    FIELD(HistoryEntryCount, uint32_t)                                          \
    FIELD(HasRestoreData, bool)                                                 \
    FIELD(SessionStoreEpoch, uint32_t)                                          \
 +  FIELD(ZenBoostsData, nscolor)                                               \
 +  FIELD(ZenBoostsComplementaryRotation, float)                                \
 +  FIELD(IsZenBoostsInverted, bool)                                            \
++  /* Device pixels of the top edge covered by hardware (the camera housing);  \
++   * see mozilla/ZenObscuredInset.h. Top-level only. */                       \
++  FIELD(ZenObscuredTopInset, int32_t)                                         \
    /* Whether we can execute scripts in this BrowsingContext. Has no effect    \
     * unless scripts are also allowed in the parent WindowContext. */          \
    FIELD(AllowJavascript, bool)                                                \
-@@ -671,6 +674,11 @@ class BrowsingContext : public nsILoadContext, public nsWrapperCache {
+@@ -676,6 +682,12 @@ class BrowsingContext : public nsILoadContext, public nsWrapperCache {
  
    bool FullscreenAllowed() const;
  
@@ -21,10 +24,11 @@ index 6f7f58bba3be6f08b3b27e81f30864c61d683351..2516126365ee9e1c07e245a873efe5f4
 +    return GetZenBoostsComplementaryRotation();
 +  }
 +  auto IsZenBoostsInverted() const { return GetIsZenBoostsInverted(); }
++  int32_t ZenObscuredTopInset() const { return GetZenObscuredTopInset(); }
    float FullZoom() const { return GetFullZoom(); }
    float TextZoom() const { return GetTextZoom(); }
  
-@@ -1290,6 +1298,19 @@ class BrowsingContext : public nsILoadContext, public nsWrapperCache {
+@@ -1299,6 +1311,24 @@ class BrowsingContext : public nsILoadContext, public nsWrapperCache {
    }
  
    void DidSet(FieldIndex<IDX_SessionStoreEpoch>, uint32_t aOldValue);
@@ -40,6 +44,11 @@ index 6f7f58bba3be6f08b3b27e81f30864c61d683351..2516126365ee9e1c07e245a873efe5f4
 +  }
 +  bool CanSet(FieldIndex<IDX_IsZenBoostsInverted>, const bool&, ContentParent*) {
 +    return true;
++  }
++  void DidSet(FieldIndex<IDX_ZenObscuredTopInset>, int32_t aOldValue);
++  bool CanSet(FieldIndex<IDX_ZenObscuredTopInset>, const int32_t& aValue,
++              ContentParent* aSource) {
++    return IsTop() && aValue >= 0 && CheckOnlyEmbedderCanSet(aSource);
 +  }
  
    // Ensure that opener is in the same BrowsingContextGroup.

@@ -8,11 +8,13 @@ XPIDL_SOURCES += [
 
 EXPORTS.mozilla += [
     "ZenCommonUtils.h",
+    "ZenObscuredInset.h",
     "ZenShareInternal.h",
 ]
 
 SOURCES += [
     "ZenCommonUtils.cpp",
+    "ZenObscuredInset.cpp",
 ]
 
 XPCOM_MANIFESTS += [

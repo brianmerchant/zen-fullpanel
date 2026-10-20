@@ -1,0 +1,120 @@
+diff --git a/layout/generic/nsCanvasFrame.cpp b/layout/generic/nsCanvasFrame.cpp
+index 58fc2a02247c3df1b0f568af51368023e813a345..96cbaf83ce144c1c7455f1ebe04479d48445ab15 100644
+--- a/layout/generic/nsCanvasFrame.cpp
++++ b/layout/generic/nsCanvasFrame.cpp
+@@ -5,10 +5,12 @@
+ /* rendering object that goes directly inside the document's scrollbars */
+ 
+ #include "nsCanvasFrame.h"
++#include "mozilla/ZenObscuredInset.h"
+ 
+ #include "gfxContext.h"
+ #include "gfxPlatform.h"
+ #include "gfxUtils.h"
++#include "mozilla/AbsoluteContainingBlock.h"
+ #include "mozilla/BasePrincipal.h"
+ #include "mozilla/ComputedStyle.h"
+ #include "mozilla/PresShell.h"
+@@ -387,6 +389,26 @@ void nsCanvasFrame::BuildDisplayList(nsDisplayListBuilder* aBuilder,
+ 
+   aLists.BorderBackground()->AppendToTop(&list);
+ 
++  // Zen notch scrolling (Solid Color): paint the obscured band above the
++  // root element in the page's top-edge color; it scrolls away with the
++  // canvas like real content.
++  if (const nscoord obscuredTop = zen::ObscuredTopInset(PresContext());
++      obscuredTop && !GetPrevInFlow() &&
++      GetParent() == PresShell()->GetRootScrollContainerFrame()) {
++    Maybe<nscolor> band = zen::BandColor(this);
++    if (band && *band != canvasBg.mColor) {
++      aLists.BorderBackground()->AppendNewToTopWithIndex<nsDisplaySolidColor>(
++          aBuilder, this, /* aIndex = */ 1,
++          nsRect(0, 0, GetSize().width, obscuredTop) +
++              aBuilder->ToReferenceFrame(this),
++          *band);
++    }
++    // Not for hit-testing builds: sampling the band color hit-tests itself.
++    if (aBuilder->IsForPainting()) {
++      zen::NoteBandPainted(this);
++    }
++  }
++
+   for (nsIFrame* kid : PrincipalChildList()) {
+     // Put our child into its own pseudo-stack.
+     BuildDisplayListForChild(aBuilder, kid, aLists);
+@@ -457,6 +479,14 @@ void nsCanvasFrame::Reflow(nsPresContext* aPresContext,
+     aDesiredSize.BSize(wm) = nscoord(0);
+   }
+   aDesiredSize.SetOverflowAreasToDesiredBounds();
++  // Zen notch scrolling: offset the root element below the obscured band of the
++  // root scroll port so it can still scroll up underneath it. The canvas
++  // background keeps painting the band at the top.
++  const nscoord obscuredTop =
++      !prevCanvasFrame && !wm.IsVertical() &&
++              GetParent() == PresShell()->GetRootScrollContainerFrame()
++          ? zen::ObscuredTopInset(aPresContext)
++          : 0;
+   nsIFrame* nextKid = nullptr;
+   for (auto* kidFrame = mFrames.FirstChild(); kidFrame; kidFrame = nextKid) {
+     nextKid = kidFrame->GetNextSibling();
+@@ -495,8 +525,17 @@ void nsCanvasFrame::Reflow(nsPresContext* aPresContext,
+     }
+ 
+     if (MOZ_LIKELY(availableSize.BSize(kidWM) > 0)) {
++      Maybe<LogicalSize> kidCBSize;
++      if (obscuredTop && !kidFrame->IsPlaceholderFrame() &&
++          !kidWM.IsVertical()) {
++        nsSize cb = aReflowInput.ComputedPhysicalSize();
++        if (cb.height != NS_UNCONSTRAINEDSIZE) {
++          cb.height = std::max(0, cb.height - obscuredTop);
++        }
++        kidCBSize.emplace(kidWM, cb);
++      }
+       ReflowInput kidReflowInput(aPresContext, aReflowInput, kidFrame,
+-                                 availableSize);
++                                 availableSize, kidCBSize);
+ 
+       if (aReflowInput.IsBResizeForWM(kidReflowInput.GetWritingMode()) &&
+           kidFrame->HasAnyStateBits(NS_FRAME_CONTAINS_RELATIVE_BSIZE)) {
+@@ -509,6 +548,9 @@ void nsCanvasFrame::Reflow(nsPresContext* aPresContext,
+       LogicalMargin margin = kidReflowInput.ComputedLogicalMargin(kidWM);
+       LogicalPoint kidPt(kidWM, margin.IStart(kidWM), margin.BStart(kidWM));
+       (kidWM.IsOrthogonalTo(wm) ? kidPt.I(kidWM) : kidPt.B(kidWM)) += bOffset;
++      if (kidCBSize) {
++        kidPt.B(kidWM) += obscuredTop;
++      }
+ 
+       nsReflowStatus kidStatus;
+       ReflowChild(kidFrame, aPresContext, kidDesiredSize, kidReflowInput, kidWM,
+@@ -593,8 +635,29 @@ void nsCanvasFrame::Reflow(nsPresContext* aPresContext,
+                                     ReflowChildFlags::Default, aStatus);
+   }
+ 
+-  FinishReflowWithAbsoluteFrames(aPresContext, aDesiredSize, aReflowInput,
+-                                 aStatus);
++  if (obscuredTop) {
++    zen::ScheduleBandColorUpdate(this);
++    // As FinishReflowWithAbsoluteFrames(), but the initial containing block
++    // starts below the obscured band like the root element does. Keep in sync
++    // with ReflowInput::CalculateHypotheticalPosition().
++    auto* absoluteContainer = GetAbsoluteContainingBlock();
++    if (absoluteContainer && absoluteContainer->PrepareAbsoluteFrames(this)) {
++      nsRect cb(nsPoint(), aDesiredSize.PhysicalSize());
++      cb.y += obscuredTop;
++      cb.height = std::max(0, cb.height - obscuredTop);
++      AbsPosReflowFlags flags{AbsPosReflowFlag::AllowFragmentation,
++                              AbsPosReflowFlag::CBWidthChanged,
++                              AbsPosReflowFlag::CBHeightChanged};
++      nsReflowStatus absposStatus;
++      absoluteContainer->Reflow(this, aPresContext, aReflowInput, absposStatus,
++                                cb, flags, &aDesiredSize.mOverflowAreas);
++      aStatus.MergeCompletionStatusFrom(absposStatus);
++    }
++    FinishAndStoreOverflow(&aDesiredSize, aReflowInput.mStyleDisplay);
++  } else {
++    FinishReflowWithAbsoluteFrames(aPresContext, aDesiredSize, aReflowInput,
++                                   aStatus);
++  }
+ 
+   NS_FRAME_TRACE_REFLOW_OUT("nsCanvasFrame::Reflow", aStatus);
+ }

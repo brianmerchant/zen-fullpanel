@@ -1,0 +1,26 @@
+diff --git a/layout/generic/StickyScrollContainer.cpp b/layout/generic/StickyScrollContainer.cpp
+index 70be40c95063d097cef568613975c5c549950254..4fd26ed464f337f9858a1f4f87663cea88ffe400 100644
+--- a/layout/generic/StickyScrollContainer.cpp
++++ b/layout/generic/StickyScrollContainer.cpp
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include "StickyScrollContainer.h"
++#include "mozilla/ZenObscuredInset.h"
+ 
+ #include "PresShell.h"
+ #include "mozilla/OverflowChangedTracker.h"
+@@ -195,6 +196,13 @@ StickyScrollContainer::StickyLimits StickyScrollContainer::ComputeStickyLimits(
+   nsMargin sfPadding = scrolledFrame->GetUsedPadding();
+   nsPoint sfOffset = aFrame->GetParent()->GetOffsetTo(scrolledFrame);
+   nsSize sfSize = GetScrollContainerSize(mScrollContainerFrame);
++  if (mScrollContainerFrame->IsRootScrollFrameOfDocument()) {
++    // Zen notch scroll: stick below the obscured band of the root scroll port.
++    const nscoord obscuredTop =
++        zen::ObscuredTopInset(mScrollContainerFrame->PresContext());
++    sfPadding.top += obscuredTop;
++    sfSize.height = std::max(0, sfSize.height - obscuredTop);
++  }
+   StyleDirection direction = cbFrame->StyleVisibility()->mDirection;
+   nsMargin effectiveOffsets = *computedOffsets;
+ 

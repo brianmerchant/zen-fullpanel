@@ -1,0 +1,29 @@
+diff --git a/layout/generic/ScrollContainerFrame.cpp b/layout/generic/ScrollContainerFrame.cpp
+index 676c882127d9f64a5df3bbf6948597f34bd899b5..87708f63e69ab117bad6f22ba92b31c7e9a76dd8 100644
+--- a/layout/generic/ScrollContainerFrame.cpp
++++ b/layout/generic/ScrollContainerFrame.cpp
+@@ -5,6 +5,7 @@
+ /* rendering object to wrap rendering objects that should be scrollable */
+ 
+ #include "mozilla/ScrollContainerFrame.h"
++#include "mozilla/ZenObscuredInset.h"
+ 
+ #include <stdint.h>
+ 
+@@ -7938,8 +7939,14 @@ nsMargin ScrollContainerFrame::GetScrollPadding() const {
+ 
+   // The spec says percentage values are relative to the scroll port size.
+   // https://drafts.csswg.org/css-scroll-snap-1/#scroll-padding
+-  return ResolveScrollPaddingStyle(styleFrame->StylePadding()->mScrollPadding,
+-                                   GetScrollPortRect().Size());
++  nsMargin padding = ResolveScrollPaddingStyle(
++      styleFrame->StylePadding()->mScrollPadding, GetScrollPortRect().Size());
++  if (mIsRoot) {
++    // Zen notch scroll: the obscured band is not part of the snapport, so
++    // scrollIntoView, fragment navigation and find land below it.
++    padding.top += zen::ObscuredTopInset(PresContext());
++  }
++  return padding;
+ }
+ 
+ ScrollSnapInfo ScrollContainerFrame::ComputeScrollSnapInfo() {

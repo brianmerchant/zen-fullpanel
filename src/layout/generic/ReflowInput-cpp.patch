@@ -1,0 +1,35 @@
+diff --git a/layout/generic/ReflowInput.cpp b/layout/generic/ReflowInput.cpp
+index 1ae8bf85450a16a4f766cd8a71f4206aa2ca55f6..3d33cb4775122f34d9c7e308b805254ee8ab0d15 100644
+--- a/layout/generic/ReflowInput.cpp
++++ b/layout/generic/ReflowInput.cpp
+@@ -5,6 +5,7 @@
+ /* struct containing the input to nsIFrame::Reflow */
+ 
+ #include "mozilla/ReflowInput.h"
++#include "mozilla/ZenObscuredInset.h"
+ 
+ #include <algorithm>
+ 
+@@ -1560,6 +1561,8 @@ void ReflowInput::CalculateHypotheticalPosition(
+             do_QueryFrame(cbFrame->PrincipalChildList().FirstChild())) {
+       const nsMargin scrollbarSizes = sf->GetActualScrollbarSizes();
+       cbOffset.MoveBy(-scrollbarSizes.left, -scrollbarSizes.top);
++      // Zen notch scroll, see ViewportFrame.
++      cbOffset.y -= zen::ObscuredTopInset(cbFrame->PresContext());
+     }
+ 
+     // ViewportFrame has no border or padding, so the padding-box size is equal
+@@ -1567,6 +1570,13 @@ void ReflowInput::CalculateHypotheticalPosition(
+     cbSize = aCBPaddingBoxSize.GetPhysicalSize(cbwm);
+   } else {
+     cbSize = aCBReflowInput->ComputedSizeAsContainerIfConstrained();
++    // Zen notch scroll: the canvas offsets its initial containing block too.
++    if (cbFrame->IsCanvasFrame() && !cbFrame->GetPrevInFlow() &&
++        !cbFrame->GetWritingMode().IsVertical() &&
++        cbFrame->GetParent() ==
++            cbFrame->PresShell()->GetRootScrollContainerFrame()) {
++      cbOffset.y -= zen::ObscuredTopInset(cbFrame->PresContext());
++    }
+   }
+ 
+   LogicalPoint logCBOffs(wm, cbOffset, cbSize - blockContainerSize);

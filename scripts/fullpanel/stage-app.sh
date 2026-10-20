@@ -53,7 +53,8 @@ STAGED="$STAGE/$(basename "$APP")"
 
 # mach package signs ad hoc; re-sign the whole bundle ad hoc so every
 # nested binary and the bundle agree after extraction.
-codesign --force --deep --sign - "$STAGED" >/dev/null 2>&1
+xattr -cr "$STAGED"   # codesign refuses Finder info and similar attributes
+codesign --force --deep --sign - "$STAGED"
 codesign --verify --deep --strict "$STAGED"
 PLIST="$STAGED/Contents/Info.plist"
 {
@@ -69,7 +70,7 @@ PLIST="$STAGED/Contents/Info.plist"
   echo "Profile root:  ~/Library/Application Support/$(grep '^Profile=' "$STAGED/Contents/Resources/application.ini" | cut -d= -f2)"
   echo "Updater:       $([ -e "$STAGED/Contents/MacOS/updater.app" ] && echo PRESENT || echo none)"
   echo "Architecture:  $(lipo -archs "$STAGED/Contents/MacOS/zen")"
-  echo "Signature:     ad hoc ($(codesign -dv "$STAGED" 2>&1 | grep -m1 '^Signature' || echo 'Signature=adhoc'))"
+  echo "Signature:     ad hoc ($(codesign -dv "$STAGED" 2>&1 | grep '^Signature' | head -1))"
   echo "Config:        ZEN_RELEASE=1 ZEN_GA_DISABLE_PGO=1 ZEN_DISABLE_LTO=1; Rust ${RUSTUP_TOOLCHAIN:-?}; $(sw_vers -productVersion)"
   echo "Built:         $(grep -m1 '^BuildID=' "$OBJ"/dist/bin/application.ini | cut -d= -f2)"
   echo "Staged:        $(date '+%Y-%m-%d %H:%M %Z') by scripts/fullpanel/stage-app.sh"

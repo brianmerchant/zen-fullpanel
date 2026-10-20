@@ -81,5 +81,50 @@ switch in an existing objdir left the old brand strings (BUILDING.md); Zen's
 post-update overlay covered the window in fresh profiles, which had made a
 hit-test assertion pass trivially (test profiles now skip it).
 
-Hardware run (`hardware_fullscreen.py`): **not yet run** — it takes over the
-display and needs the owner's go-ahead.
+Hardware run (`hardware_fullscreen.py`, staged app `ce63685`, built-in
+1800 × 1169 @120 Hz, unattended; runs `test-runs/20261020-165429`, `-170200`):
+
+| Step | Result |
+|---|---|
+| Standard native fullscreen (FullPanel off) | PASS — 1800 × 1130, no FullPanel chrome; exit PASS |
+| FullPanel fullscreen | PASS — window 1800 × 1169 = display; housing 220 × 38 pt at x 790; inset 38 pt; the page's fixed header at 38 |
+| Band at rest (screen capture) | PASS — left and right of the housing = the page's top section; the inner-border cut shows the gap |
+| Band scrolled | PASS — page rows beside the housing; hit test in the band reaches the row |
+| Band back at the top | PASS — same pixels as before, no seam |
+| Exit and re-entry × 3 | PASS — inactive with inset 0 after each exit; active, full display, inset 38 after each entry |
+| Mode switch in fullscreen, both directions | PASS — applies from the next entry |
+| Dock click from the desktop (Finder front) | PASS — fullscreen Space shown, app front, still active |
+| Command-Tab from the desktop | PASS — same; the "menu bar only" activation did not occur |
+| Display without the housing (1800 × 1125, `modehold`) | PASS — ordinary fullscreen, fallback `noCameraHousing`, FullPanel chrome off; back with the housing: active again in the same entry |
+| Relaunch after quitting in fullscreen | INFO — Zen restores the window and tab **windowed** (1800 × 1130), not in fullscreen; the next entry is FullPanel (PASS) |
+| Menu bar reveal at the top edge | NOT VERIFIED — a synthetic pointer warp to y = 0 did not reveal the menu bar (captures identical); needs a real pointer |
+| **Mission Control return (Escape; Space thumbnail)** | **FAIL** — see below |
+| **Space switch away and back** | **FAIL** — see below |
+
+#### FullPanelKit defect: black menu-bar band after any Space return
+
+After Mission Control (either route) or a Control-arrow Space switch, the
+window's Space comes back (`shown=1`), the session stays `active` and the
+window keeps the whole display, but the band beside the housing is opaque
+black and stays so (sampled at 0.5, 1.5, 3, 6 and 10 s) until fullscreen is
+left and re-entered. Content below the band is correct.
+
+FullPanelKit's trace (`-FullPanelTrace` via the app's defaults domain): on
+opening Mission Control it logs `reveal visible=1 source=titlebar-alpha`
+and sets `overlay backdrop=opaque`; every later return re-applies
+`backdrop=opaque`. `FPKFullScreenTitlebar -reread` treats the menu bar as
+revealed while the fullscreen titlebar window's alpha is > 0.01, and only
+un-reveals when it drops to ≤ 0.01. For Gecko's `ToolbarWindow` that alpha is
+**1.00 while the menu bar is hidden** (`titlebar-followed … alpha=1.00 …
+reveal=0` right after entry), so the first transient "menu bar visible"
+latches the reveal for the rest of the session. Likely trigger, not
+verified: Gecko adds a titlebar accessory view controller to
+`ToolbarWindow` (to shift its toolbar with the menu bar), which keeps that
+titlebar window opaque; a real top-edge reveal will most likely latch the
+same way.
+
+With FullPanelKit's documented `FullPanelRevealIntegration` option off
+(user default, measured, then removed), the same returns keep the correct
+band for 10 s (`test-runs/20261020-170037`). The fix belongs in FullPanelKit's
+reveal sensing (it cannot assume the titlebar window fades); Zen ships
+unchanged.

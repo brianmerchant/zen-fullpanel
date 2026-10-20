@@ -138,7 +138,9 @@ class Run:
           const b = gBrowser.selectedBrowser, r = b.getBoundingClientRect();
           const root = document.documentElement;
           return {outer: [window.outerWidth, window.outerHeight], screen: [screen.width, screen.height],
-                  y: window.screenY, attrs: [...root.attributes].map(a => a.name).filter(n => n.startsWith('zen-fullpanel')),
+                  // zen-fullpanel-outer-border is also set outside FullPanel (Zen's own card).
+                  y: window.screenY, attrs: [...root.attributes].map(a => a.name)
+                    .filter(n => n.startsWith('zen-fullpanel') && n != 'zen-fullpanel-outer-border'),
                   inset: b.browsingContext.zenObscuredTopInset, dpr: window.devicePixelRatio,
                   browser: [r.left, r.top, r.right, r.bottom], fullScreen: window.fullScreen};
         """)
@@ -364,13 +366,16 @@ def step_display(run):
     modes = ctl("modes")
     with open(os.path.join(OUT, "modes.txt"), "w") as f:
         f.write(modes)
-    # A mode below the housing: same aspect as the panel without its band.
+    # The current scale without the housing band (1800x1169 -> 1800x1125 on
+    # the 14-inch panel), at the current refresh rate.
+    current = next((l.split() for l in modes.splitlines() if l.endswith("current")), None)
     pick = None
-    for line in modes.splitlines():
-        parts = line.split()
-        if len(parts) >= 3 and "x" in parts[1]:
-            w, h = parts[1].split("x")
-            if w == "1512" and h == "945":
+    if current:
+        w, h = current[1].split("x")
+        for line in modes.splitlines():
+            parts = line.split()
+            if len(parts) >= 4 and parts[1].split("x")[0] == w and parts[1] != current[1] \
+                    and int(parts[1].split("x")[1]) < int(h) and parts[3] == current[3]:
                 pick = parts[0]
     if not pick:
         record("display mode change", "INFO", {"reason": "no housing-less mode found", "modes": modes[:500]})

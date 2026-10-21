@@ -216,8 +216,10 @@ exit/re-entry ×3, mode switch, standard fullscreen: PASS. Trace of a
 returns-only run (`-192040`): titlebar followed at alpha 1.00, never faded,
 no reveal during any of the returns, backdrop clear throughout.
 
-Not verified: the menu-bar reveal with a **physical** pointer (see Manual
-acceptance), a physical click in the band. Harness notes: a fourth Space
+Manual (owner-reported, 2026-10-20, staged `ce83d59-fpke1f0b0b`): the
+menu-bar reveal with a physical pointer, hiding again with the band showing
+the page, the same after Mission Control + Escape, a menu used from the
+revealed menu bar, and a physical click beside the housing: all working. Harness notes: a fourth Space
 owned by another app appeared during one run (`-191629`) and sent the
 Control-Left routes there; the routes now wait for each Space change. The
 restore step used to overwrite the first browser's log (now appended).

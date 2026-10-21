@@ -14,7 +14,7 @@ Recording for the terminal, and FullPanelKit's spacesctl
     python3 scripts/fullpanel/hardware_fullscreen.py [step ...]
 
 Steps (default: all, in this order): standard fullpanel band reveal cycles
-switch missioncontrol spaces dock cmdtab display restore. Results, logs and
+switch missioncontrol spaces returns dock cmdtab display restore. Results, logs and
 top-of-display captures go to ~/Projects/Zen-FullPanelKit/test-runs/<time>/.
 Each step prints PASS, FAIL or INFO with what it measured.
 """
@@ -231,22 +231,140 @@ def step_band(run):
                if not near(b["under_cut"], b["below_band"], 20) else "FAIL", b)
 
 
-def step_reveal(run):
-    s = run.state()
-    h = s["housing"]
-    ctl("move", 200, 0)
-    time.sleep(1.6)
-    img = capture("reveal-shown")
-    scale = img.width / s["window"]["width"]
-    shown = img.pixel(int(200 * scale), int(12 * scale))
-    ctl("move", h["x"] - 200, 600)
+def pointer_to_top_edge():
+    """FullPanelKit's smoke path: approach the top edge and hold the pointer there."""
+    for y in (300, 240, 180, 120, 60, 20, 0):
+        ctl("move", 400, y)
+        time.sleep(0.03)
+    for _ in range(15):
+        ctl("move", 400, 0)
+        time.sleep(0.03)
+    for y in (10, 30, 60, 30, 10, 0):
+        ctl("move", 400, y)
+        time.sleep(0.03)
+    for _ in range(40):
+        ctl("move", 400, 0)
+        time.sleep(0.03)
+    time.sleep(0.6)
+
+
+def pointer_into_content():
+    for y in (20, 60, 120, 200, 300, 450, 600):
+        ctl("move", 400, y)
+        time.sleep(0.03)
     time.sleep(2.0)
-    img2 = capture("reveal-hidden")
-    hidden = img2.pixel(int(200 * scale), int(12 * scale))
-    lay = run.layout()
-    record("menu bar: revealed from the top edge, hidden again", "PASS"
-           if not near(shown, hidden, 10) and run.state().get("state") == "active" else "FAIL",
-           {"shown": shown, "hidden": hidden, "outer": lay["outer"]})
+
+
+def band_shows_page(b):
+    return bool(b) and near(b["left_band"], b["below_band"]) and near(b["right_band"], b["below_band"])
+
+
+def step_reveal(run):
+    """Synthetic HID pointer moves only; a physical pointer is a manual check."""
+    rows = []
+    for cycle in (1, 2):
+        before = band_check(run, f"reveal-{cycle}-before")
+        pointer_to_top_edge()
+        shown = band_check(run, f"reveal-{cycle}-shown")
+        pointer_into_content()
+        hidden = band_check(run, f"reveal-{cycle}-hidden")
+        rows.append({"before": before and before["left_band"], "shown": shown and shown["left_band"],
+                     "hidden": hidden and hidden["left_band"],
+                     "revealed": bool(before and shown) and not near(shown["left_band"], before["left_band"], 10),
+                     "restored": band_shows_page(hidden)})
+    ok = all(r["revealed"] and r["restored"] for r in rows) and run.state().get("state") == "active"
+    record("menu bar: synthetic top-edge reveal, hidden again (x2)", "PASS" if ok else "FAIL", {"cycles": rows})
+
+
+def mission_control_open():
+    return "open=1" in ctl("mcstate")
+
+
+def return_by(run, route):
+    """One return to Zen's fullscreen Space. Routes: escape (Mission Control
+    opened in the Space, Escape), spaces (Control-Left, Control-Right),
+    preview (Control-Left to the desktop, Mission Control there, Control-Right
+    inside it to Zen's Space, click its window preview)."""
+    run.activate()
+    if route == "escape":
+        ctl("key", 126, "ctrl", "fn")
+        time.sleep(1.8)
+        ctl("key", 53)
+    elif route == "spaces":
+        ctl("key", 123, "ctrl", "fn")
+        if not ctl("waitshown", run.pid, 0, 3000).startswith("ok"):
+            return "Control-Left did not leave the Space"
+        time.sleep(0.8)
+        ctl("key", 124, "ctrl", "fn")
+        ctl("waitshown", run.pid, 1, 4000)
+    else:
+        ctl("key", 123, "ctrl", "fn")
+        time.sleep(2.0)
+        if not ctl("waitshown", run.pid, 0, 3000).startswith("ok"):
+            return "Control-Left did not leave the Space"
+        time.sleep(0.8)
+        subprocess.run(["open", "-a", "Mission Control"], check=False)
+        if not ctl("waitmc", 1, 3000).startswith("ok"):
+            return "Mission Control did not open"
+        time.sleep(0.6)
+        ctl("key", 124, "ctrl", "fn")   # inside Mission Control: to Zen's Space
+        if not ctl("waitshown", run.pid, 1, 3000).startswith("ok"):
+            ctl("key", 53)
+            time.sleep(1.5)
+            return "Control-Right in Mission Control did not reach Zen's Space"
+        time.sleep(0.8)
+        pos = ctl("mcwindow", "Zen").split()
+        if len(pos) >= 2 and mission_control_open():
+            ctl("click", pos[0], pos[1])
+        ctl("waitmc", 0, 3000)
+    time.sleep(2.5)
+    harness = ""
+    if mission_control_open():
+        harness = "Mission Control still open; closed with Escape"
+        ctl("key", 53)
+        time.sleep(1.5)
+    return harness
+
+
+def step_returns(run, rounds=3):
+    """Repeated returns by every route, each checked; then the band's Solid
+    Color scrolling and a real click beside the housing."""
+    rows = []
+    for i in range(rounds):
+        for route in ("escape", "spaces", "preview"):
+            harness = return_by(run, route)
+            line = ctl("space", run.pid)
+            b = band_check(run, f"returns-{i + 1}-{route}")
+            rows.append({"route": route, "space": line, "state": run.state().get("state"),
+                         "band": band_shows_page(b), "left": b and b["left_band"], "harness": harness})
+    ok = all(" shown=1" in f" {r['space']}" and r["state"] == "active" and r["band"] and not r["harness"]
+             for r in rows)
+    record(f"repeated returns ({len(rows)}: Escape, Control-arrows, window preview)", "PASS" if ok else "FAIL",
+           {"returns": rows})
+    top = band_check(run, "returns-at-top")
+    run.m.js("window.scrollTo(0, 420)")
+    time.sleep(0.8)
+    scrolled = band_check(run, "returns-scrolled")
+    # Content coordinates of a point in the band left of the housing. Clicks
+    # posted by spacesctl (CGEvent) are not recorded by the page under this
+    # harness (any build, anywhere in the window), so the click goes through
+    # WebDriver (Gecko's own event path); a physical click is a manual check.
+    h = run.state()["housing"]
+    left, top_px = run.layout()["browser"][:2]
+    x, y = h["x"] - 60 - left, 10 - top_px
+    hit = run.m.js("const e = document.elementFromPoint(arguments[0], arguments[1]);"
+                   " return e && e.className", [x, y])
+    run.m.js("delete document.documentElement.dataset.click")
+    run.m.click_at(x, y)
+    time.sleep(0.4)
+    clicked = run.m.js("return document.documentElement.dataset.click || ''")
+    run.m.js("window.scrollTo(0, 0)")
+    time.sleep(0.8)
+    ok = bool(top and scrolled) and not near(scrolled["left_band"], top["left_band"], 20) \
+        and hit == "row" and clicked.endswith(",row")
+    record("after the returns: scrolled content beside the housing, hit test and click reach the page",
+           "PASS" if ok else "FAIL",
+           {"scrolled": scrolled and scrolled["left_band"], "hit": hit, "click": clicked})
 
 
 def step_cycles(run):
@@ -423,7 +541,7 @@ def step_restore(run, site):
 
 RUN = None
 ALL = ["standard", "fullpanel", "band", "reveal", "cycles", "switch", "missioncontrol", "spaces",
-       "dock", "cmdtab", "display", "restore"]
+       "returns", "dock", "cmdtab", "display", "restore"]
 
 
 def main():
@@ -443,7 +561,7 @@ def main():
     try:
         for step in steps:
             try:
-                if step in ("band", "reveal", "cycles", "switch", "missioncontrol", "spaces", "dock",
+                if step in ("band", "reveal", "cycles", "switch", "missioncontrol", "spaces", "returns", "dock",
                             "cmdtab", "display") and not RUN.state().get("active"):
                     RUN.set_pref("zen.fullpanel.enabled", True)
                     RUN.load()

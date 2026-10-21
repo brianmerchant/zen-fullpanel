@@ -220,7 +220,7 @@ class ZenApp:
             for k, v in prefs.items():
                 f.write(f"user_pref({json.dumps(k)}, {json.dumps(v)});\n")
         env = dict(os.environ, MOZ_CRASHREPORTER_DISABLE="1", **self.env)
-        self.log = open(os.path.join(self.profile, "browser.log"), "w")
+        self.log = open(os.path.join(self.profile, "browser.log"), "a")  # a relaunch keeps the earlier log
         self.proc = subprocess.Popen(
             [self.binary, "--marionette", "--remote-allow-system-access", "--no-remote",
              "--profile", self.profile],

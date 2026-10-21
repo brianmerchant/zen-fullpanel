@@ -48,7 +48,7 @@ menubar item has a label.
 | Talos `feature/fullpanelkit-macos` | `34834f1` (on `7736280`) | Solid Color semantics (`WebViewNotchScroll.swift`), inset rule (housing bottom + gutter clearance, only when the page is under the housing), Develop toggles (FullPanel Fullscreen, Inner Border, Outer Border, Notch Band), notch cutout geometry (`BrowserInterfaceMask.swift`) |
 | Talos | `2b61086` (reverted by `7736280`) | **Not reproduced**: re-entering a restored fullscreen window through FullPanel bounced new windows. Zen likewise leaves a window restored straight into fullscreen in ordinary fullscreen until its next entry (FullPanelKit `.fallback` with an adoption diagnostic) |
 | Chromeless `experiment/notch-claude` | `b6c6407` | Compared only. Its `hybrid` mode (per-document collision detector, per-origin hints) is a WebKit workaround and was not ported; its band color lacks the fixed-subtree rule Talos uses |
-| FullPanelKit | tag `v0.1.0` = `1911fa2` (`main` = `e5feaf7`, docs only since) | Core sources vendored unmodified |
+| FullPanelKit | tag `v0.1.0` = `1911fa2` (`main` = `e5feaf7`, docs only since) | Core sources vendored unmodified; since `ce83d59` from `e1f0b0b` (`fix/pinned-titlebar-reveal`, the reveal-latch fix; see TESTING.md "Root cause") |
 
 ### Solid Color: Talos vs the earlier Zen band
 

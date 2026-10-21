@@ -8,7 +8,8 @@ scrolling. Unofficial; not affiliated with the Zen team.
   `feature/zen-fullpanel`
 - Upstream baseline: tag `1.23.3b` = `6adb8106286306d882008e5f886367d91dbef740`
   (zen-browser/desktop, release published 2026-10-16)
-- FullPanelKit: `v0.1.0` = `1911fa2`, vendored unmodified (MIT)
+- FullPanelKit: `e1f0b0b` (branch `fix/pinned-titlebar-reveal`: v0.1.0 plus
+  the reveal-latch fix for opaque titlebar windows), vendored unmodified (MIT)
 - [BUILDING.md](BUILDING.md) · [TESTING.md](TESTING.md) ·
   [IDENTITY.md](IDENTITY.md) · [AUDIT.md](AUDIT.md)
 
